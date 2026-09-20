@@ -7,10 +7,12 @@ export function ProfileForm({
   email,
   initialNameEn,
   initialNameKo,
+  hasCertificate,
 }: {
   email: string;
   initialNameEn: string;
   initialNameKo: string;
+  hasCertificate: boolean;
 }) {
   const router = useRouter();
 
@@ -26,6 +28,10 @@ export function ProfileForm({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   async function handleInfoSubmit(e: FormEvent) {
     e.preventDefault();
@@ -82,6 +88,39 @@ export function ProfileForm({
       setPasswordError("변경 중 오류가 발생했습니다.");
     } finally {
       setPasswordLoading(false);
+    }
+  }
+
+  async function handleDeleteSubmit(e: FormEvent) {
+    e.preventDefault();
+    setDeleteError(null);
+
+    if (
+      !window.confirm(
+        "정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없으며, 제출한 신청서와 발급된 자격증도 함께 삭제됩니다.",
+      )
+    ) {
+      return;
+    }
+
+    setDeleteLoading(true);
+    try {
+      const res = await fetch("/api/profile/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: deletePassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setDeleteError(data.error ?? "탈퇴 처리 중 오류가 발생했습니다.");
+        return;
+      }
+      router.push("/");
+      router.refresh();
+    } catch {
+      setDeleteError("탈퇴 처리 중 오류가 발생했습니다.");
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -207,6 +246,50 @@ export function ProfileForm({
 
         <button type="submit" disabled={passwordLoading} className="btn-primary">
           {passwordLoading ? "변경 중..." : "비밀번호 변경"}
+        </button>
+      </form>
+
+      <form
+        onSubmit={handleDeleteSubmit}
+        className="card space-y-4 border-red-200 bg-red-50/40"
+      >
+        <h2 className="font-semibold text-red-700">회원 탈퇴</h2>
+        <p className="text-sm text-slate-600">
+          탈퇴하면 계정과 제출한 신청서가 삭제되며, 이 작업은 되돌릴 수 없습니다.
+          {hasCertificate &&
+            " 이미 발급된 자격증도 함께 삭제되어 검증 링크가 더 이상 작동하지 않습니다."}
+        </p>
+
+        <div>
+          <label
+            htmlFor="deletePassword"
+            className="block text-sm font-medium text-slate-700"
+          >
+            비밀번호 확인
+          </label>
+          <input
+            id="deletePassword"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={deletePassword}
+            onChange={(e) => setDeletePassword(e.target.value)}
+            className="input"
+          />
+        </div>
+
+        {deleteError && (
+          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            {deleteError}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={deleteLoading}
+          className="rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+        >
+          {deleteLoading ? "탈퇴 처리 중..." : "회원 탈퇴"}
         </button>
       </form>
     </div>

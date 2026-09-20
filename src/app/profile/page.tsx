@@ -7,7 +7,10 @@ export default async function ProfilePage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const user = await prisma.user.findUnique({ where: { id: session.sub } });
+  const user = await prisma.user.findUnique({
+    where: { id: session.sub },
+    include: { certificate: true },
+  });
   if (!user) redirect("/login");
 
   return (
@@ -22,6 +25,7 @@ export default async function ProfilePage() {
           email={user.email}
           initialNameEn={user.nameEn}
           initialNameKo={user.nameKo ?? ""}
+          hasCertificate={Boolean(user.certificate)}
         />
       </div>
     </div>

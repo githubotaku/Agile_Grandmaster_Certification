@@ -25,6 +25,9 @@ export const signupSchema = z.object({
   nameEn: nameEnSchema,
   nameKo: nameKoSchema,
   password: newPasswordSchema,
+  agreePrivacy: z.boolean().refine((v) => v === true, {
+    message: "개인정보 수집·이용에 동의해야 가입할 수 있습니다.",
+  }),
 });
 export type SignupInput = z.infer<typeof signupSchema>;
 
@@ -33,6 +36,10 @@ export const loginSchema = z.object({
   password: z.string().min(1, "비밀번호를 입력해주세요."),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1, "비밀번호를 입력해주세요."),
+});
 
 export const profileUpdateSchema = z.object({
   nameEn: nameEnSchema,

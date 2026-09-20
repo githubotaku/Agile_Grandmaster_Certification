@@ -11,6 +11,7 @@ export default function SignupPage() {
   const [nameKo, setNameKo] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -22,13 +23,17 @@ export default function SignupPage() {
       setError("비밀번호가 일치하지 않습니다.");
       return;
     }
+    if (!agreePrivacy) {
+      setError("개인정보 수집·이용에 동의해야 가입할 수 있습니다.");
+      return;
+    }
 
     setLoading(true);
     try {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, nameEn, nameKo, password }),
+        body: JSON.stringify({ email, nameEn, nameKo, password, agreePrivacy }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -113,6 +118,27 @@ export default function SignupPage() {
           />
         </Field>
 
+        <label className="flex items-start gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            required
+            checked={agreePrivacy}
+            onChange={(e) => setAgreePrivacy(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0"
+          />
+          <span>
+            [필수]{" "}
+            <Link
+              href="/privacy"
+              target="_blank"
+              className="font-medium text-indigo-600 hover:underline"
+            >
+              개인정보 수집·이용
+            </Link>
+            에 동의합니다.
+          </span>
+        </label>
+
         {error && (
           <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
@@ -121,7 +147,7 @@ export default function SignupPage() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !agreePrivacy}
           className="w-full rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
         >
           {loading ? "가입 중..." : "가입하기"}

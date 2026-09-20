@@ -15,6 +15,7 @@ export async function POST(request: Request) {
   }
 
   const { email, nameEn, nameKo, password } = parsed.data;
+  // agreePrivacy is validated as `true` by signupSchema above.
   const normalizedEmail = email.trim().toLowerCase();
 
   const existing = await prisma.user.findUnique({
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
       nameKo: nameKo && nameKo.length > 0 ? nameKo : null,
       passwordHash,
       role: ROLES.USER,
+      privacyConsentedAt: new Date(),
     },
   });
 

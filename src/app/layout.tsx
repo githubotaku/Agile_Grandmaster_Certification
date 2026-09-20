@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Link from "next/link";
 import { Header } from "@/components/Header";
 import { SITE_NAME } from "@/lib/constants";
 
@@ -30,7 +31,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Header />
         <main className="flex-1">{children}</main>
         <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-400">
-          &copy; {new Date().getFullYear()} {SITE_NAME}
+          <p>
+            &copy; {new Date().getFullYear()} {SITE_NAME}
+          </p>
+          <Link href="/privacy" className="mt-1 inline-block hover:underline">
+            개인정보처리방침
+          </Link>
         </footer>
       </body>
     </html>
