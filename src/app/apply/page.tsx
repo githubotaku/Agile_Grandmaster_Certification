@@ -25,7 +25,7 @@ export default async function ApplyPage() {
           <p className="text-sm text-slate-600">
             2차 관문에 접근하려면 먼저 1차 관문(지식 퀴즈)을 통과해야 합니다.
           </p>
-          <Link href="/quiz" className="btn-primary mt-4 inline-block">
+          <Link href="/" className="btn-primary mt-4 inline-block">
             퀴즈 풀러 가기
           </Link>
         </div>
@@ -34,7 +34,7 @@ export default async function ApplyPage() {
   }
 
   if (user.certificate) {
-    redirect("/dashboard");
+    redirect("/");
   }
 
   const latest = user.applications[0] ?? null;

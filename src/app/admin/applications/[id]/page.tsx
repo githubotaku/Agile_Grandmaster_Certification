@@ -11,7 +11,7 @@ export default async function AdminApplicationDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const session = await getSession();
-  if (!session || session.role !== ROLES.ADMIN) redirect("/dashboard");
+  if (!session || session.role !== ROLES.ADMIN) redirect("/");
 
   const { id } = await params;
   const application = await prisma.application.findUnique({

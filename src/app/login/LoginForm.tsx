@@ -27,7 +27,7 @@ export function LoginForm() {
         setError(data.error ?? "로그인 중 오류가 발생했습니다.");
         return;
       }
-      const next = searchParams.get("next") ?? "/dashboard";
+      const next = searchParams.get("next") ?? "/";
       router.push(next);
       router.refresh();
     } catch {

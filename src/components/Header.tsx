@@ -24,12 +24,6 @@ export async function Header() {
                 </Link>
               )}
               <Link
-                href="/dashboard"
-                className="text-sm font-medium text-slate-600 hover:text-slate-900"
-              >
-                대시보드
-              </Link>
-              <Link
                 href="/profile"
                 className="text-sm font-medium text-slate-600 hover:text-slate-900"
               >

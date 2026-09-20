@@ -6,7 +6,7 @@ import { APPLICATION_STATUS, ROLES } from "@/lib/constants";
 
 export default async function AdminPage() {
   const session = await getSession();
-  if (!session || session.role !== ROLES.ADMIN) redirect("/dashboard");
+  if (!session || session.role !== ROLES.ADMIN) redirect("/");
 
   const applications = await prisma.application.findMany({
     orderBy: [{ status: "asc" }, { submittedAt: "desc" }],

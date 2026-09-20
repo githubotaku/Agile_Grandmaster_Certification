@@ -22,7 +22,7 @@ async function readSession(request: NextRequest): Promise<SessionPayload | null>
   }
 }
 
-const USER_ONLY_PATHS = ["/dashboard", "/quiz", "/apply", "/profile"];
+const USER_ONLY_PATHS = ["/apply", "/profile"];
 const GUEST_ONLY_PATHS = ["/login", "/signup"];
 
 function matchesPath(pathname: string, paths: string[]) {
@@ -48,11 +48,11 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isAdminPath && session?.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   if (isGuestOnlyPath && session) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();
@@ -60,8 +60,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/quiz/:path*",
     "/apply/:path*",
     "/profile/:path*",
     "/admin/:path*",

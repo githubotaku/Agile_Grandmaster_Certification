@@ -40,7 +40,7 @@ export default function SignupPage() {
         setError(data.error ?? "가입 중 오류가 발생했습니다.");
         return;
       }
-      router.push("/dashboard");
+      router.push("/");
       router.refresh();
     } catch {
       setError("가입 중 오류가 발생했습니다.");
