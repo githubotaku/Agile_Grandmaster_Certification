@@ -28,12 +28,16 @@ Connection string**에서 두 개의 연결 문자열을 복사해 `.env`에 넣
 ```bash
 npm install
 cp .env.example .env   # 이미 .env가 있다면 값만 확인/수정 (DATABASE_URL, DIRECT_URL 등)
-
-# 최초 1회: 스키마를 DB에 적용 (DDL이라 반드시 직접 연결(DIRECT_URL)로 실행)
-DATABASE_URL="$DIRECT_URL" npx prisma migrate dev
-
-npm run db:seed        # .env의 ADMIN_EMAIL/ADMIN_PASSWORD로 관리자 계정 생성
 npm run dev
+```
+
+DB에 아직 테이블이 없다면(최초 1회) 아래처럼 마이그레이션을 적용하세요. DDL이라
+반드시 직접 연결(`DIRECT_URL`)로 실행해야 합니다 — 풀러는 DDL을 지원하지 않습니다.
+(Vercel에 먼저 배포했다면 빌드 시 자동으로 적용되므로 이 단계는 생략해도 됩니다.)
+
+```bash
+DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy
+npm run db:seed   # .env의 ADMIN_EMAIL/ADMIN_PASSWORD로 관리자 계정 생성
 ```
 
 `$DIRECT_URL`은 셸에 그 값이 들어있지 않으면 치환되지 않으니, `.env`에 적어둔 실제
@@ -69,36 +73,23 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 ## 배포하기 (Vercel + Supabase)
 
-### 1. Supabase 프로젝트 준비
+`package.json`의 `vercel-build` 스크립트가 Vercel 빌드 때마다 자동으로
+`prisma migrate deploy`(직접 연결로 스키마 적용) → `prisma db seed`(관리자 계정 없으면
+생성, 실패해도 빌드는 계속 진행) → `next build` 순서로 실행하므로, **로컬에서 마이그레이션
+명령을 따로 실행할 필요 없이** 아래 두 단계만 하면 됩니다.
 
-Supabase 대시보드에서 프로젝트를 열고 **Project Settings → Database → Connection string**에서:
+### 1. Supabase 연결 문자열 준비
 
-- **Transaction pooler** (포트 6543, `?pgbouncer=true` 포함) → `DATABASE_URL`
-- **Session pooler** 또는 **Direct connection** (포트 5432) → `DIRECT_URL`
+Supabase 대시보드 → 프로젝트 상단 **Connect** 버튼 → **ORMs** 탭 → **Prisma** 선택 시
+`DATABASE_URL`/`DIRECT_URL` 값이 바로 나옵니다. (또는 **Connect → Connection string** 탭에서
+Transaction pooler(6543) / Session pooler·Direct(5432) 문자열을 각각 복사해도 동일)
 
-두 값을 복사해둡니다. (비밀번호는 프로젝트 생성 시 설정한 DB 비밀번호이며, 잊었다면
-같은 화면에서 재설정할 수 있습니다.)
-
-### 2. 프로덕션 DB에 스키마 적용 + 관리자 계정 생성
-
-로컬에서 방금 복사한 값으로 한 번 실행합니다. (마이그레이션은 DDL이라 반드시
-`DIRECT_URL`로 실행해야 합니다 — pooler는 DDL을 지원하지 않습니다.)
-
-```bash
-DATABASE_URL="postgresql://...:5432/postgres" \
-npx prisma migrate deploy
-
-DATABASE_URL="postgresql://...:6543/postgres?pgbouncer=true" \
-ADMIN_EMAIL="admin@yourdomain.com" ADMIN_PASSWORD="강력한 비밀번호" \
-npx prisma db seed
-```
-
-### 3. Vercel에 배포
+### 2. Vercel에 배포
 
 1. [vercel.com/new](https://vercel.com/new) 에서 이 GitHub 저장소
    (`githubotaku/Agile_Grandmaster_Certification`)를 Import 합니다.
-   - Framework는 Next.js로 자동 인식됩니다. 빌드/설치 명령은 기본값 그대로 두면 됩니다
-     (`npm run build`, `postinstall`에서 `prisma generate`가 자동 실행됩니다).
+   - Framework는 Next.js로 자동 인식되고, `vercel-build` 스크립트가 있으므로 빌드 명령도
+     자동으로 이걸 사용합니다. 따로 설정할 필요 없습니다.
    - 지금 바로 올리고 싶다면 배포 브랜치를 이 작업 브랜치로 지정하거나,
      먼저 이 브랜치를 기본 브랜치에 머지한 뒤 Import 하세요.
 2. **Environment Variables**에 아래 값을 추가합니다.
@@ -106,22 +97,22 @@ npx prisma db seed
    | 변수 | 값 |
    | --- | --- |
    | `DATABASE_URL` | Supabase Transaction pooler 연결 문자열 (포트 6543) |
-   | `DIRECT_URL` | Supabase Direct/Session 연결 문자열 (포트 5432) — 코드에서 직접 쓰진 않지만 참고용으로 같이 등록해두면 편함 |
+   | `DIRECT_URL` | Supabase Direct/Session pooler 연결 문자열 (포트 5432) — 빌드 시 마이그레이션에 사용됨 |
    | `SESSION_SECRET` | `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` 로 생성한 값 |
    | `NEXT_PUBLIC_SITE_URL` | 배포 후 Vercel이 주는 주소 (예: `https://agile-grandmaster.vercel.app`) — 최초 배포 후 값을 채우고 재배포 |
-   | `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME_EN` | 참고용으로만 쓰이며(런타임에서는 사용하지 않음), 실제 관리자 계정은 2단계의 `prisma db seed`로 이미 생성됨 |
+   | `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME_EN` | 설정해두면 빌드 시 자동으로 이 계정이 관리자로 시드됨 |
 
-3. **Deploy**를 누르면 Vercel이 자동으로 기본 주소(`*.vercel.app`)를 발급합니다.
-   커스텀 도메인은 나중에 Vercel 프로젝트의 **Settings → Domains**에서 연결하면 됩니다.
-   도메인을 연결한 뒤에는 `NEXT_PUBLIC_SITE_URL`도 해당 도메인으로 갱신하고 재배포해야
-   LinkedIn 공유 링크가 올바른 주소를 가리킵니다.
+3. **Deploy**를 누르면 Vercel이 마이그레이션 적용 → 관리자 계정 시드 → 빌드까지 자동으로
+   끝내고, 기본 주소(`*.vercel.app`)를 발급합니다. 커스텀 도메인은 나중에 Vercel 프로젝트의
+   **Settings → Domains**에서 연결하면 됩니다. 도메인을 연결한 뒤에는
+   `NEXT_PUBLIC_SITE_URL`도 해당 도메인으로 갱신하고 재배포해야 LinkedIn 공유 링크가
+   올바른 주소를 가리킵니다.
 
 ### 스키마를 변경했다면
 
 로컬에서 `DATABASE_URL="$DIRECT_URL" npx prisma migrate dev`로 마이그레이션 파일을
-만들어 커밋한 뒤, 배포 전에 프로덕션 DB에도 위 2단계처럼
-`DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy`를 실행해 반영하세요.
-Vercel 빌드 과정에는 마이그레이션 적용이 포함되어 있지 않습니다.
+만들어 커밋하고 푸시하면, 다음 Vercel 배포 때 `vercel-build`가 자동으로 프로덕션 DB에
+반영합니다.
 
 ## 프로젝트 구조
 

@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "vercel-build": "DATABASE_URL=\"$DIRECT_URL\" prisma migrate deploy && (prisma db seed || true) && next build"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
