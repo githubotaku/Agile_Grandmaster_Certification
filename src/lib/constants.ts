@@ -16,5 +16,5 @@ export const ESSAY_MAX_LENGTH = 5000;
 
 export const SITE_NAME = "Agile Grandmaster Certification";
 export const CERT_TITLE = "Agile Grandmaster";
-export const CERT_ORG_NAME = "Agile Grandmaster Committee";
+export const CERT_ORG_NAME = "International Jaehwang Lee Agile Committee";
 export const SESSION_COOKIE_NAME = "agc_session";

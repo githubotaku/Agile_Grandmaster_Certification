@@ -22,7 +22,7 @@ async function readSession(request: NextRequest): Promise<SessionPayload | null>
   }
 }
 
-const USER_ONLY_PATHS = ["/dashboard", "/quiz", "/apply"];
+const USER_ONLY_PATHS = ["/dashboard", "/quiz", "/apply", "/profile"];
 const GUEST_ONLY_PATHS = ["/login", "/signup"];
 
 function matchesPath(pathname: string, paths: string[]) {
@@ -63,6 +63,7 @@ export const config = {
     "/dashboard/:path*",
     "/quiz/:path*",
     "/apply/:path*",
+    "/profile/:path*",
     "/admin/:path*",
     "/login",
     "/signup",

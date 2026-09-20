@@ -4,7 +4,7 @@ import "server-only";
 // Kept out of the QUIZ_QUESTIONS module (and marked server-only) so it
 // never ships to the client.
 export const QUIZ_ANSWER_KEY: Record<string, string> = {
-  q1: "c",
-  q2: "a",
-  q3: "d",
+  q1: "b",
+  q2: "b",
+  q3: "c",
 };

@@ -29,6 +29,12 @@ export async function Header() {
               >
                 대시보드
               </Link>
+              <Link
+                href="/profile"
+                className="text-sm font-medium text-slate-600 hover:text-slate-900"
+              >
+                개인정보 수정
+              </Link>
               <LogoutButton />
             </>
           ) : (
