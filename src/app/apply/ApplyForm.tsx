@@ -64,7 +64,7 @@ export function ApplyForm({ initialEssay = "" }: { initialEssay?: string }) {
           rows={14}
           value={essay}
           onChange={(e) => setEssay(e.target.value)}
-          placeholder="애자일 원칙을 팀/조직에 어떻게 적용했는지, 어떤 변화를 이끌어냈는지 구체적으로 작성해주세요."
+          placeholder="대략 작성해주세요. 없으면 없다고 적으세요."
           className="input font-normal"
         />
       </div>
