@@ -14,18 +14,30 @@
 ## 기술 스택
 
 - Next.js 16 (App Router, TypeScript, Tailwind CSS v4)
-- Prisma 7 + SQLite/libSQL (`@prisma/adapter-libsql` 드라이버 어댑터 — 로컬은 파일, 배포 환경은 Turso)
+- Prisma 7 + PostgreSQL (Supabase) — `@prisma/adapter-pg` 드라이버 어댑터
 - 자체 구현 인증: `bcryptjs`(비밀번호 해시) + `jose`(JWT 세션 쿠키)
 
 ## 로컬 개발 환경 설정
 
+Supabase 프로젝트를 하나 만들고 (또는 기존 프로젝트 사용), **Project Settings → Database →
+Connection string**에서 두 개의 연결 문자열을 복사해 `.env`에 넣습니다.
+
+- **Transaction pooler** (포트 6543) → `DATABASE_URL` — 앱 런타임이 사용
+- **Session pooler / Direct connection** (포트 5432) → `DIRECT_URL` — 마이그레이션 전용
+
 ```bash
 npm install
-cp .env.example .env   # 이미 .env가 있다면 값만 확인/수정
-npx prisma migrate dev # 최초 1회: 로컬 SQLite DB 생성 및 마이그레이션 적용
+cp .env.example .env   # 이미 .env가 있다면 값만 확인/수정 (DATABASE_URL, DIRECT_URL 등)
+
+# 최초 1회: 스키마를 DB에 적용 (DDL이라 반드시 직접 연결(DIRECT_URL)로 실행)
+DATABASE_URL="$DIRECT_URL" npx prisma migrate dev
+
 npm run db:seed        # .env의 ADMIN_EMAIL/ADMIN_PASSWORD로 관리자 계정 생성
 npm run dev
 ```
+
+`$DIRECT_URL`은 셸에 그 값이 들어있지 않으면 치환되지 않으니, `.env`에 적어둔 실제
+Direct connection 문자열을 직접 붙여넣어도 됩니다.
 
 [http://localhost:3000](http://localhost:3000) 에서 확인할 수 있습니다.
 
@@ -33,8 +45,8 @@ npm run dev
 
 | 변수 | 설명 |
 | --- | --- |
-| `DATABASE_URL` | 로컬은 SQLite 파일 경로(`file:./dev.db`), 배포 환경은 Turso libSQL URL(`libsql://...`) |
-| `TURSO_AUTH_TOKEN` | Turso DB 인증 토큰 (로컬 파일 DB 사용 시에는 비워둠) |
+| `DATABASE_URL` | Supabase **Transaction pooler** 연결 문자열 (포트 6543). 앱이 실제로 쿼리할 때 사용 |
+| `DIRECT_URL` | Supabase **Direct/Session** 연결 문자열 (포트 5432). `prisma migrate` 실행 시에만 사용 (풀러는 DDL을 지원하지 않음) |
 | `SESSION_SECRET` | 세션 쿠키 서명에 사용하는 랜덤 비밀키 |
 | `NEXT_PUBLIC_SITE_URL` | 자격증 URL, LinkedIn 공유 링크 생성에 사용하는 사이트 기본 주소 |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME_EN` | `npm run db:seed` 실행 시 생성되는 최초 관리자 계정 정보 |
@@ -55,38 +67,28 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 | `npm run db:seed` | 관리자 계정 시드 |
 | `npm run db:studio` | Prisma Studio (DB GUI) 실행 |
 
-## 배포하기 (Vercel + Turso)
+## 배포하기 (Vercel + Supabase)
 
-SQLite 파일은 Vercel 같은 서버리스 환경에서 배포할 때마다 초기화되므로, 배포 시에는
-SQLite와 호환되는 원격 DB인 [Turso](https://turso.tech)를 사용합니다. 코드는 이미
-`@prisma/adapter-libsql` 어댑터로 로컬 파일(`file:./dev.db`)과 Turso(`libsql://...`)를
-모두 지원하도록 되어 있습니다.
+### 1. Supabase 프로젝트 준비
 
-### 1. Turso 데이터베이스 생성
+Supabase 대시보드에서 프로젝트를 열고 **Project Settings → Database → Connection string**에서:
 
-```bash
-# Turso CLI 설치 (최초 1회)
-curl -sSfL https://get.tur.so/install.sh | bash
+- **Transaction pooler** (포트 6543, `?pgbouncer=true` 포함) → `DATABASE_URL`
+- **Session pooler** 또는 **Direct connection** (포트 5432) → `DIRECT_URL`
 
-turso auth login
-turso db create agile-grandmaster
-turso db show agile-grandmaster --url        # -> DATABASE_URL 로 사용
-turso db tokens create agile-grandmaster      # -> TURSO_AUTH_TOKEN 으로 사용
-```
-
-CLI 대신 [turso.tech](https://turso.tech) 웹 콘솔에서 동일하게 생성할 수도 있습니다.
+두 값을 복사해둡니다. (비밀번호는 프로젝트 생성 시 설정한 DB 비밀번호이며, 잊었다면
+같은 화면에서 재설정할 수 있습니다.)
 
 ### 2. 프로덕션 DB에 스키마 적용 + 관리자 계정 생성
 
-로컬 `.env`에 방금 발급받은 값을 임시로 넣고 실행합니다.
+로컬에서 방금 복사한 값으로 한 번 실행합니다. (마이그레이션은 DDL이라 반드시
+`DIRECT_URL`로 실행해야 합니다 — pooler는 DDL을 지원하지 않습니다.)
 
 ```bash
-DATABASE_URL="libsql://agile-grandmaster-xxx.turso.io" \
-TURSO_AUTH_TOKEN="발급받은 토큰" \
+DATABASE_URL="postgresql://...:5432/postgres" \
 npx prisma migrate deploy
 
-DATABASE_URL="libsql://agile-grandmaster-xxx.turso.io" \
-TURSO_AUTH_TOKEN="발급받은 토큰" \
+DATABASE_URL="postgresql://...:6543/postgres?pgbouncer=true" \
 ADMIN_EMAIL="admin@yourdomain.com" ADMIN_PASSWORD="강력한 비밀번호" \
 npx prisma db seed
 ```
@@ -103,8 +105,8 @@ npx prisma db seed
 
    | 변수 | 값 |
    | --- | --- |
-   | `DATABASE_URL` | `libsql://agile-grandmaster-xxx.turso.io` |
-   | `TURSO_AUTH_TOKEN` | Turso 토큰 |
+   | `DATABASE_URL` | Supabase Transaction pooler 연결 문자열 (포트 6543) |
+   | `DIRECT_URL` | Supabase Direct/Session 연결 문자열 (포트 5432) — 코드에서 직접 쓰진 않지만 참고용으로 같이 등록해두면 편함 |
    | `SESSION_SECRET` | `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` 로 생성한 값 |
    | `NEXT_PUBLIC_SITE_URL` | 배포 후 Vercel이 주는 주소 (예: `https://agile-grandmaster.vercel.app`) — 최초 배포 후 값을 채우고 재배포 |
    | `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME_EN` | 참고용으로만 쓰이며(런타임에서는 사용하지 않음), 실제 관리자 계정은 2단계의 `prisma db seed`로 이미 생성됨 |
@@ -116,8 +118,9 @@ npx prisma db seed
 
 ### 스키마를 변경했다면
 
-로컬에서 `prisma migrate dev`로 마이그레이션 파일을 만들어 커밋한 뒤, 배포 전에
-프로덕션 Turso DB에도 위 2단계처럼 `prisma migrate deploy`를 실행해 반영하세요.
+로컬에서 `DATABASE_URL="$DIRECT_URL" npx prisma migrate dev`로 마이그레이션 파일을
+만들어 커밋한 뒤, 배포 전에 프로덕션 DB에도 위 2단계처럼
+`DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy`를 실행해 반영하세요.
 Vercel 빌드 과정에는 마이그레이션 적용이 포함되어 있지 않습니다.
 
 ## 프로젝트 구조

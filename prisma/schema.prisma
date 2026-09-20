@@ -6,12 +6,12 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // role: "USER" | "ADMIN"
-// SQLite has no native enum support, so roles/statuses are plain strings
-// validated at the application layer (see src/lib/constants.ts).
+// Kept as a plain string (validated at the application layer, see
+// src/lib/constants.ts) rather than a native enum so it stays portable.
 model User {
   id           String   @id @default(cuid())
   email        String   @unique

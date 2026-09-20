@@ -9,6 +9,10 @@ export default defineConfig({
     path: "prisma/migrations",
     seed: "tsx prisma/seed.ts",
   },
+  // Note: this build's `datasource` config only supports `url` (and
+  // `shadowDatabaseUrl`) — there's no `directUrl` field. Supabase's pooled
+  // connection can't run DDL, so `prisma migrate` commands must be run with
+  // `--url "$DIRECT_URL"` to hit the direct (non-pooled) connection instead.
   datasource: {
     url: process.env["DATABASE_URL"],
   },
