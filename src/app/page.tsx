@@ -59,7 +59,10 @@ export default async function Home() {
         </StatusStep>
 
         <StatusStep
-          done={Boolean(certificate) || latestApplication?.status === APPLICATION_STATUS.APPROVED}
+          done={
+            Boolean(latestApplication) &&
+            latestApplication?.status !== APPLICATION_STATUS.REJECTED
+          }
           title="2차 관문 · 위원회 신청"
           description="애자일 그랜드마스터로서 실천한 내용을 5,000자 이내로 작성해 제출합니다."
         >
